@@ -14,11 +14,11 @@ has db => sub {
   my $schema_class = $self->config->{db_schema} or die "Unknown DB Schema Class";
   eval "require $schema_class" or die "Could not load Schema Class ($schema_class)";
 
-  my $db_connect = $self->config->{db_connect} or die "No DBI connection string provided";
-  my @db_connect = ref $db_connect ? @$db_connect : ( $db_connect );
+  my $dsn = $self->config->{db_dsn} or die "No DBI connection string provided";
+  my @db_opts = @{$self->config}{ qw/db_username db_password db_options/ };
 
-  my $schema = $schema_class->connect( @db_connect ) 
-    or die "Could not connect to $schema_class using $db_connect[0]";
+  my $schema = $schema_class->connect( $dsn, @db_opts ) 
+    or die "Could not connect to $schema_class using $dsn";
 
   return $schema;
 };
@@ -50,16 +50,14 @@ sub startup {
   $app->plugin( Config => { 
     file => $app->config_file,
     default => {
-      db_schema  => 'Galileo::DB::Schema',
-      db_connect => [
-        'dbi:SQLite:dbname=' . $app->home->rel_file( 'galileo.db' ),
-        undef,
-        undef,
-        { sqlite_unicode => 1 },
-      ],
-      files => 'static',
-      sanitize => 1,
-      secret => 'MySecret',
+      db_schema   => 'Galileo::DB::Schema',
+      db_dsn      => 'dbi:SQLite:dbname=' . $app->home->rel_file( 'galileo.db' ),
+      db_username => '',
+      db_password => '',
+      db_options  => { sqlite_unicode => 1 },
+      files       => 'static',
+      use_sanitizing_editor   => 1,
+      secret      => 'MySecret',
     },
   });
 
